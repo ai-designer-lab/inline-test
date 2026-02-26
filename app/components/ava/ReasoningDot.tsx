@@ -29,13 +29,14 @@ export function ReasoningDot({ phase, stepIndex = 0 }: ReasoningDotProps) {
     >
       <span
         style={{
-          display: "inline-block",
+          display: "block",
           width: 7,
           height: 7,
           borderRadius: "50%",
           backgroundColor: COLOR.greyscale900,
           animation: "avaPulse 1000ms ease-in-out infinite",
           flexShrink: 0,
+          alignSelf: "center",
         }}
       />
       {phase === "reasoning" && (
