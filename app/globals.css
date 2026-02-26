@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* AVA pulsing dot animation — Variant C */
+@keyframes avaPulse {
+  0%   { opacity: 0.2; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* AVA reasoning text — left-to-right reveal */
+@keyframes avaTextReveal {
+  from { clip-path: inset(0 100% 0 0); opacity: 0; }
+  to   { clip-path: inset(0 0% 0 0);   opacity: 1; }
+}
+
+/* Suppress dark mode overrides for sandbox pages */
+@media (prefers-color-scheme: dark) {
+  .sandbox-page {
+    background: #fafaf8;
+    color: #3F4145;
+  }
+}
