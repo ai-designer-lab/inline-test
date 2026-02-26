@@ -5,10 +5,9 @@ import { StarterQuestions } from "./StarterQuestions";
 import { MarkdownAnswer } from "./MarkdownAnswer";
 import { ReasoningDot } from "./ReasoningDot";
 import { AnswerFeedback } from "./FeedbackPanel";
-import { CSATPrompt } from "./CSATPrompt";
 import { SIJO_STARTERS, SIJO_ANSWERS } from "../../mocks/sijoCoolingSleep";
 import type { StarterQuestion } from "../../mocks/sijoCoolingSleep";
-import type { Message, CSATState, FeedbackState } from "./types";
+import type { Message, FeedbackState } from "./types";
 import {
   REASONING_STEP_MS,
   ANSWER_START_DELAY_MS,
@@ -231,12 +230,6 @@ function PoweredByFirework() {
 export function AvaInlineWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentPairIdx, setCurrentPairIdx] = useState(0);
-  const [interactionCount, setInteractionCount] = useState(0);
-  const [csat, setCsat] = useState<CSATState>({
-    shown: false,
-    rating: null,
-    submitted: false,
-  });
   const [viewMode, setViewMode] = useState<"starter" | "qa">("starter");
   const [reasoningStep, setReasoningStep] = useState(0);
   const [inputValue, setInputValue] = useState("");
@@ -344,11 +337,6 @@ export function AvaInlineWidget() {
                   )
                 );
                 streamingRef.current = false;
-                setInteractionCount((prev) => {
-                  const next = prev + 1;
-                  if (next === 2) setTimeout(() => setCsat((c) => ({ ...c, shown: true })), 1500);
-                  return next;
-                });
               }
             }, STREAM_CHUNK_MS);
           }, remaining + ANSWER_START_DELAY_MS);
@@ -378,9 +366,23 @@ export function AvaInlineWidget() {
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId || !m.feedback) return m;
-        const alreadyDown = m.feedback.vote === "down" && vote === "down";
-        const panelOpen = vote === "down" && !alreadyDown;
-        return { ...m, feedback: { ...m.feedback, vote, panelOpen } };
+        const isSameVote = m.feedback.vote === vote;
+        if (isSameVote && !m.feedback.submitted) {
+          // Undo
+          return { ...m, feedback: { ...m.feedback, vote: null, panelOpen: false } };
+        }
+        // Switch vote or re-open after submit: open panel
+        const switching = m.feedback.vote !== null && m.feedback.vote !== vote;
+        return {
+          ...m,
+          feedback: {
+            ...m.feedback,
+            vote,
+            panelOpen: true,
+            submitted: false,
+            ...(switching ? { tags: [], text: "" } : {}),
+          },
+        };
       })
     );
   }
@@ -412,7 +414,7 @@ export function AvaInlineWidget() {
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId && m.feedback
-          ? { ...m, feedback: { ...m.feedback, panelOpen: false, vote: null } }
+          ? { ...m, feedback: { ...m.feedback, panelOpen: false } }
           : m
       )
     );
@@ -440,24 +442,11 @@ export function AvaInlineWidget() {
   const canNavLeft = viewMode === "qa";
   const canNavRight = viewMode === "starter" ? pairs.length > 0 : currentPairIdx < pairs.length - 1;
 
-  function handleCSATRate(rating: number) {
-    setCsat({ shown: true, rating, submitted: true });
-  }
-
-  function handleCSATDismiss() {
-    setCsat((c) => ({ ...c, shown: false }));
-  }
-
   function handleSend() {
     if (!inputValue.trim()) return;
     setInputValue("");
     // Scripted prototype — free-form not wired to answers
   }
-
-  const showCsat =
-    csat.shown &&
-    !isStreaming &&
-    currentPair?.avaMsg.status === "complete";
 
   return (
     <div
@@ -544,21 +533,7 @@ export function AvaInlineWidget() {
               }
             />
 
-            {/* CSAT */}
-            <div
-              style={{
-                maxHeight: showCsat ? 300 : 0,
-                opacity: showCsat ? 1 : 0,
-                overflow: "hidden",
-                transition: "max-height 0.35s ease, opacity 0.25s ease",
-              }}
-            >
-              {csat.shown && (
-                <CSATPrompt csat={csat} onRate={handleCSATRate} onDismiss={handleCSATDismiss} />
-              )}
-            </div>
-
-            {/* Follow-up chips — after CSAT */}
+            {/* Follow-up chips */}
             {currentPair.avaMsg.status === "complete" &&
               currentPair.avaMsg.followUps &&
               currentPair.avaMsg.followUps.length > 0 && (

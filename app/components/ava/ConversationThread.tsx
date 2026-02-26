@@ -2,29 +2,24 @@
 
 import React, { useEffect, useRef } from "react";
 import { AnswerCard } from "./AnswerCard";
-import { CSATPrompt } from "./CSATPrompt";
-import type { Message, CSATState } from "./types";
+import type { Message } from "./types";
 
 interface ConversationThreadProps {
   messages: Message[];
-  csat: CSATState;
   reasoningStep: number;
   onVote: (messageId: string, vote: "up" | "down") => void;
   onFeedbackSubmit: (messageId: string, tags: string[], text: string) => void;
   onFeedbackClose: (messageId: string) => void;
   onFollowUp: (userMessage: string, nextAnswerId: string) => void;
-  onCSATRate: (rating: number) => void;
 }
 
 export function ConversationThread({
   messages,
-  csat,
   reasoningStep,
   onVote,
   onFeedbackSubmit,
   onFeedbackClose,
   onFollowUp,
-  onCSATRate,
 }: ConversationThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -32,38 +27,9 @@ export function ConversationThread({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Build render list: interleave CSAT after the second AVA answer
-  const renderItems: Array<{ type: "message"; msg: Message } | { type: "csat" }> = [];
-  let avaCount = 0;
-  let csatInserted = false;
-
-  for (const msg of messages) {
-    renderItems.push({ type: "message", msg });
-    if (msg.role === "ava" && msg.status === "complete") {
-      avaCount++;
-      if (avaCount === 2 && !csatInserted) {
-        renderItems.push({ type: "csat" });
-        csatInserted = true;
-      }
-    }
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {renderItems.map((item, idx) => {
-        if (item.type === "csat") {
-          return (
-            <CSATPrompt
-              key={`csat-${idx}`}
-              csat={csat}
-              onRate={onCSATRate}
-              onDismiss={() => {}}
-            />
-          );
-        }
-
-        const { msg } = item;
-
+      {messages.map((msg) => {
         if (msg.role === "user") {
           return (
             <div key={msg.id} style={{ display: "flex", justifyContent: "flex-end" }}>

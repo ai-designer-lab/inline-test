@@ -23,7 +23,7 @@ export function ReasoningDot({ phase, stepIndex = 0 }: ReasoningDotProps) {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        minHeight: 20,
+        height: 22,
         marginTop: phase === "streaming" ? 10 : 0,
       }}
     >
@@ -36,7 +36,6 @@ export function ReasoningDot({ phase, stepIndex = 0 }: ReasoningDotProps) {
           backgroundColor: COLOR.greyscale900,
           animation: "avaPulse 1000ms ease-in-out infinite",
           flexShrink: 0,
-          alignSelf: "center",
         }}
       />
       {phase === "reasoning" && (
@@ -47,8 +46,7 @@ export function ReasoningDot({ phase, stepIndex = 0 }: ReasoningDotProps) {
             fontSize: 13,
             fontWeight: 500,
             color: COLOR.textTertiary,
-            lineHeight: 1.5,
-            display: "inline-block",
+            lineHeight: 1,
             whiteSpace: "nowrap",
             animation: "avaTextReveal 0.5s ease-out 0.15s both",
           }}

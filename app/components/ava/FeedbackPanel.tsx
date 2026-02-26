@@ -1,69 +1,63 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import type { FeedbackState } from "./types";
-import { FONT, COLOR, TYPE } from "./tokens";
+import { FONT, COLOR } from "./tokens";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function ThumbsUpSvg() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M7 10v12" />
       <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
     </svg>
   );
 }
 
-function CopySvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-    </svg>
-  );
-}
+// ─── Tag config ───────────────────────────────────────────────────────────────
 
-function CheckSvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-const FEEDBACK_TAGS = [
-  "Not accurate",
-  "Missing info",
-  "Too vague",
-  "Not helpful",
-  "Wrong product",
+const BASE_TAGS = [
+  "Incorrect or incomplete",
+  "Didn't answer my question",
+  "Slowly or buggy",
+  "Style or tone",
+  "Other",
 ];
 
+const VIDEO_TAG = "Video wasn't helpful";
+
+function buildTags(hasVideo: boolean) {
+  if (!hasVideo) return BASE_TAGS;
+  return [BASE_TAGS[0], BASE_TAGS[1], VIDEO_TAG, ...BASE_TAGS.slice(2)];
+}
+
+// ─── Panel content ────────────────────────────────────────────────────────────
+
 interface FeedbackPanelProps {
+  mode?: "positive" | "negative";
+  hasVideo?: boolean;
+  initialTags?: string[];
+  initialText?: string;
   onSubmit: (tags: string[], text: string) => void;
   onClose: () => void;
 }
 
 function PanelContent({
+  mode = "negative",
+  hasVideo = false,
+  initialTags = [],
+  initialText = "",
   onSubmit,
   onClose,
 }: FeedbackPanelProps) {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [text, setText] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const tags = mode === "negative" ? buildTags(hasVideo) : [];
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
+  const [text, setText] = useState(initialText);
 
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  }
-
-  if (submitted) {
-    return (
-      <p style={{ ...TYPE.body, margin: 0, color: COLOR.textSecondary }}>
-        Thanks — saved
-      </p>
     );
   }
 
@@ -78,33 +72,37 @@ function PanelContent({
           margin: "0 0 8px 0",
         }}
       >
-        What went wrong?
+        {mode === "positive" ? "Help us answer more questions like this" : "Help us improve this response"}
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-        {FEEDBACK_TAGS.map((tag) => {
-          const active = selectedTags.includes(tag);
-          return (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              style={{
-                padding: "3px 10px",
-                fontSize: 14,
-                fontFamily: FONT,
-                fontWeight: 500,
-                borderRadius: 20,
-                border: `1px solid ${active ? COLOR.greyscale900 : COLOR.borderPrimary}`,
-                background: active ? COLOR.greyscale900 : COLOR.white,
-                color: active ? COLOR.white : COLOR.textPrimary,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {tag}
-            </button>
-          );
-        })}
-      </div>
+
+      {mode === "negative" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {tags.map((tag) => {
+            const active = selectedTags.includes(tag);
+            return (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                style={{
+                  padding: "3px 10px",
+                  fontSize: 14,
+                  fontFamily: FONT,
+                  fontWeight: 500,
+                  borderRadius: 20,
+                  border: `1px solid ${active ? COLOR.greyscale900 : COLOR.borderPrimary}`,
+                  background: active ? COLOR.greyscale900 : COLOR.white,
+                  color: active ? COLOR.white : COLOR.textPrimary,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -126,10 +124,7 @@ function PanelContent({
       />
       <div style={{ display: "flex", gap: 8 }}>
         <button
-          onClick={() => {
-            setSubmitted(true);
-            onSubmit(selectedTags, text);
-          }}
+          onClick={() => onSubmit(selectedTags, text)}
           style={{
             padding: "5px 14px",
             fontFamily: FONT,
@@ -164,7 +159,7 @@ function PanelContent({
   );
 }
 
-export function FeedbackPanel({ onSubmit, onClose }: FeedbackPanelProps) {
+export function FeedbackPanel({ mode, hasVideo, initialTags, initialText, onSubmit, onClose }: FeedbackPanelProps) {
   return (
     <div
       style={{
@@ -174,44 +169,15 @@ export function FeedbackPanel({ onSubmit, onClose }: FeedbackPanelProps) {
         borderRadius: 8,
       }}
     >
-      <PanelContent onSubmit={onSubmit} onClose={onClose} />
+      <PanelContent
+        mode={mode}
+        hasVideo={hasVideo}
+        initialTags={initialTags}
+        initialText={initialText}
+        onSubmit={onSubmit}
+        onClose={onClose}
+      />
     </div>
-  );
-}
-
-// ─── Copy button ──────────────────────────────────────────────────────────────
-
-function CopyBtn({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy() {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      title="Copy answer"
-      style={{
-        width: 26,
-        height: 26,
-        borderRadius: 6,
-        border: copied ? `1px solid ${COLOR.greyscale900}` : "none",
-        background: COLOR.white,
-        color: copied ? COLOR.greyscale900 : COLOR.textTertiary,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        padding: 0,
-        transition: "all 0.15s",
-      }}
-    >
-      {copied ? <CheckSvg /> : <CopySvg />}
-    </button>
   );
 }
 
@@ -225,6 +191,8 @@ interface AnswerFeedbackProps {
   onFeedbackClose: () => void;
 }
 
+const VIDEO_URL_RE = /youtube\.com|youtu\.be|vimeo\.com/i;
+
 export function AnswerFeedback({
   feedback,
   text,
@@ -232,27 +200,29 @@ export function AnswerFeedback({
   onFeedbackSubmit,
   onFeedbackClose,
 }: AnswerFeedbackProps) {
+  const hasVideo = text ? VIDEO_URL_RE.test(text) : false;
+
+  // Increment key each time panel opens to force PanelContent remount with fresh state
+  const panelKeyRef = useRef(0);
+  const prevOpenRef = useRef(feedback.panelOpen);
+  if (feedback.panelOpen && !prevOpenRef.current) {
+    panelKeyRef.current++;
+  }
+  prevOpenRef.current = feedback.panelOpen;
+
   return (
     <div style={{ marginTop: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <ThumbBtn
           type="up"
           active={feedback.vote === "up"}
-          disabled={feedback.submitted}
           onClick={() => onVote("up")}
         />
         <ThumbBtn
           type="down"
           active={feedback.vote === "down"}
-          disabled={feedback.submitted}
           onClick={() => onVote("down")}
         />
-        {text && <CopyBtn text={text} />}
-        {feedback.vote === "up" && !feedback.submitted && (
-          <span style={{ fontFamily: FONT, fontSize: 12, color: COLOR.textTertiary, marginLeft: 4 }}>
-            Glad it helped
-          </span>
-        )}
       </div>
 
       <div
@@ -265,6 +235,11 @@ export function AnswerFeedback({
         }}
       >
         <FeedbackPanel
+          key={panelKeyRef.current}
+          mode={feedback.vote === "up" ? "positive" : "negative"}
+          hasVideo={hasVideo}
+          initialTags={feedback.tags}
+          initialText={feedback.text}
           onSubmit={onFeedbackSubmit}
           onClose={onFeedbackClose}
         />
@@ -276,18 +251,15 @@ export function AnswerFeedback({
 function ThumbBtn({
   type,
   active,
-  disabled,
   onClick,
 }: {
   type: "up" | "down";
   active: boolean;
-  disabled: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
       title={type === "up" ? "Helpful" : "Not helpful"}
       style={{
         width: 26,
@@ -299,10 +271,9 @@ function ThumbBtn({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        cursor: disabled ? "default" : "pointer",
+        cursor: "pointer",
         fontSize: 13,
         padding: 0,
-        opacity: disabled && !active ? 0.35 : 1,
         transition: "all 0.15s",
         fontFamily: FONT,
       }}
