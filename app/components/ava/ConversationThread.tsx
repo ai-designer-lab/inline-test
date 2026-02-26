@@ -57,6 +57,7 @@ export function ConversationThread({
               key={`csat-${idx}`}
               csat={csat}
               onRate={onCSATRate}
+              onDismiss={() => {}}
             />
           );
         }
