@@ -366,20 +366,20 @@ export function AvaInlineWidget() {
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId || !m.feedback) return m;
+        if (m.feedback.submitted) return m; // locked — no changes after submit
         const isSameVote = m.feedback.vote === vote;
-        if (isSameVote && !m.feedback.submitted) {
+        if (isSameVote) {
           // Undo
           return { ...m, feedback: { ...m.feedback, vote: null, panelOpen: false } };
         }
-        // Switch vote or re-open after submit: open panel
-        const switching = m.feedback.vote !== null && m.feedback.vote !== vote;
+        // Thumbs up: no panel. Thumbs down: open panel.
+        const switching = m.feedback.vote !== null;
         return {
           ...m,
           feedback: {
             ...m.feedback,
             vote,
-            panelOpen: true,
-            submitted: false,
+            panelOpen: vote === "down",
             ...(switching ? { tags: [], text: "" } : {}),
           },
         };

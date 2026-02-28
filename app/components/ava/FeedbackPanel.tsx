@@ -22,7 +22,7 @@ const BASE_TAGS = [
   "Didn't answer my question",
   "Slowly or buggy",
   "Style or tone",
-  "Other",
+  "Something else (please describe)",
 ];
 
 const VIDEO_TAG = "Video wasn't helpful";
@@ -72,7 +72,7 @@ function PanelContent({
           margin: "0 0 8px 0",
         }}
       >
-        {mode === "positive" ? "Help us answer more questions like this" : "Help us improve this response"}
+        {mode === "positive" ? "Help us answer more questions like this" : "Help us improve"}
       </p>
 
       {mode === "negative" && (
@@ -216,11 +216,13 @@ export function AnswerFeedback({
         <ThumbBtn
           type="up"
           active={feedback.vote === "up"}
+          locked={feedback.submitted}
           onClick={() => onVote("up")}
         />
         <ThumbBtn
           type="down"
           active={feedback.vote === "down"}
+          locked={feedback.submitted}
           onClick={() => onVote("down")}
         />
       </div>
@@ -251,15 +253,18 @@ export function AnswerFeedback({
 function ThumbBtn({
   type,
   active,
+  locked,
   onClick,
 }: {
   type: "up" | "down";
   active: boolean;
+  locked: boolean;
   onClick: () => void;
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={locked ? undefined : onClick}
+      disabled={locked && !active}
       title={type === "up" ? "Helpful" : "Not helpful"}
       style={{
         width: 26,
@@ -271,11 +276,13 @@ function ThumbBtn({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        cursor: "pointer",
+        cursor: locked ? (active ? "default" : "default") : "pointer",
         fontSize: 13,
         padding: 0,
         transition: "all 0.15s",
         fontFamily: FONT,
+        opacity: locked && !active ? 0.25 : 1,
+        pointerEvents: locked ? "none" : "auto",
       }}
     >
       <span style={type === "down" ? { display: "flex", transform: "rotate(180deg)" } : {}}>
